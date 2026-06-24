@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +8,131 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// Users & Authentication
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  username          String    @unique
+  name              String?
+  passwordHash      String
+  emailVerified     Boolean   @default(false)
+  verificationToken String?
+  profileImage      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  sessions          Session[]
+  projects          Project[]
+  conversations     Conversation[]
+  preferences       UserPreference?
+  githubAccounts    GithubAccount[]
+  
+  @@index([email])
+  @@index([username])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  refreshToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  
+  @@index([userId])
+  @@index([token])
+}
+
+// Projects & Files
+model Project {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  path        String
+  files       File[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+model File {
+  id          String   @id @default(uuid())
+  projectId   String
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  path        String
+  content     String   @default("")
+  language    String?
+  size        Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([projectId])
+}
+
+// AI Conversations
+model Conversation {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String   @default("New Conversation")
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  messages    Message[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+  
+  @@index([conversationId])
+}
+
+// User Preferences
+model UserPreference {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme           String   @default("dark")
+  language        String   @default("en")
+  editorFontSize  Int      @default(14)
+  editorTabSize   Int      @default(2)
+  wordWrap        Boolean  @default(true)
+  aiModel         String   @default("openai/gpt-4")
+  autoSave        Boolean  @default(true)
+  autoSaveDelay   Int      @default(5000)
+  updatedAt       DateTime @updatedAt
+}
+
+// GitHub Integration
+model GithubAccount {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  githubId      Int      @unique
+  username      String
+  email         String?
+  accessToken   String
+  refreshToken  String?
+  avatarUrl     String?
+  connectedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([githubId])
 }
