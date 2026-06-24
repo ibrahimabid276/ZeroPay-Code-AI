@@ -85,23 +85,25 @@ export function MainLayout() {
           {/* Activity Bar */}
           <ActivityBar />
 
-          {/* Sidebar Panel */}
-          {activeSidebar && (
-            <>
-              <Panel
-                defaultSize="18%"
-                minSize="12%"
-                maxSize="30%"
-                id="sidebar"
-              >
-                <Sidebar />
-              </Panel>
-              <ResizeHandle />
-            </>
-          )}
+          {/* Main resizable area */}
+          <Group orientation="horizontal" id="main-layout" className="flex-1">
+            {/* Sidebar Panel */}
+            {activeSidebar && (
+              <>
+                <Panel
+                  defaultSize="18%"
+                  minSize="12%"
+                  maxSize="30%"
+                  id="sidebar"
+                >
+                  <Sidebar />
+                </Panel>
+                <ResizeHandle />
+              </>
+            )}
 
-          {/* Center: Welcome Dashboard or Editor + Preview + Terminal */}
-          <Panel defaultSize={chatOpen ? "52%" : activeSidebar ? "62%" : "82%"} id="editor">
+            {/* Center: Welcome Dashboard or Editor + Preview + Terminal */}
+            <Panel defaultSize={chatOpen ? "52%" : activeSidebar ? "62%" : "82%"} id="editor">
             <Group orientation="vertical" id="opencode-editor">
               <Panel defaultSize={terminalOpen ? "70%" : "100%"} id="editor-top">
                 <Group orientation="horizontal" id="opencode-center">
@@ -170,6 +172,7 @@ export function MainLayout() {
               </Panel>
             </>
           )}
+          </Group>
         </div>
         <StatusBar />
       </div>

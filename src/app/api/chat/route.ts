@@ -46,11 +46,13 @@ When generating multiple files, clearly label each file path before the code blo
 ${context ? `\nCurrent Project Context:\n${context}` : ""}`,
     };
 
-    // Model fallback chain: preferred → qwen3 → gemma3
+    // Model fallback chain: currently available free models
     const models = [
-      model || "deepseek/deepseek-chat-v3-0324",
-      "qwen/qwen3-235b-a22b",
-      "google/gemma-3-27b-it",
+      model || "google/gemma-4-26b-a4b-it:free",
+      "google/gemma-4-31b-it:free",
+      "cohere/north-mini-code:free",
+      "nvidia/nemotron-3-ultra-550b-a55b:free",
+      "poolside/laguna-m.1:free",
     ];
 
     // Attempt streaming with each model in order
@@ -75,7 +77,13 @@ ${context ? `\nCurrent Project Context:\n${context}` : ""}`,
 
         if (!apiResponse.ok) {
           const errorBody = await apiResponse.text();
-          console.warn(`Model ${currentModel} failed (${apiResponse.status}):`, errorBody.slice(0, 200));
+          console.warn(`Model ${currentModel} failed (${apiResponse.status}):`, errorBody.slice(0, 300));
+          
+          // Check if it's an authentication error
+          if (apiResponse.status === 401 || apiResponse.status === 403) {
+            console.error("API Key is invalid or expired. Please check your OPENROUTER_API_KEY");
+            break; // Don't try other models if auth fails
+          }
           continue; // Try next model
         }
 
@@ -169,7 +177,8 @@ ${context ? `\nCurrent Project Context:\n${context}` : ""}`,
     // All models failed
     return new Response(
       JSON.stringify({
-        error: "All AI models are currently unavailable. Please try again later.",
+        error: "All AI models are currently unavailable. Please check your OPENROUTER_API_KEY in .env and try again. If the issue persists, the models may be temporarily down.",
+        debug: "Check terminal logs for detailed error messages from each model attempt."
       }),
       { status: 503, headers: { "Content-Type": "application/json" } }
     );
