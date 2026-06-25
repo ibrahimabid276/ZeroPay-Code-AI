@@ -145,8 +145,15 @@ function parseInlineMarkdown(text: string): React.ReactNode[] {
 }
 
 /**
- * Parses message content to extract markdown code blocks and plain text segments.
- * Returns an array of React nodes for rendering.
+ * Parses a single line of text for inline markdown
+ */
+function parseLineContent(line: string): React.ReactNode {
+  return <>{parseInlineMarkdown(line)}</>;
+}
+
+/**
+ * Parses message content with full markdown support
+ * Handles headings, paragraphs, lists, inline formatting, and code blocks
  */
 function parseMessageContent(
   content: string,
@@ -156,20 +163,22 @@ function parseMessageContent(
   const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
   let lastIndex = 0;
   let match;
+  let partIndex = 0;
 
   while ((match = codeBlockRegex.exec(content)) !== null) {
     if (match.index > lastIndex) {
+      const textBefore = content.slice(lastIndex, match.index);
       parts.push(
-        <span key={`text-${lastIndex}`} className="whitespace-pre-wrap">
-          {parseInlineMarkdown(content.slice(lastIndex, match.index))}
-        </span>
+        <div key={`text-block-${partIndex++}`} className="mb-2">
+          {parseBlockMarkdown(textBefore)}
+        </div>
       );
     }
     const lang = match[1] || "text";
     const code = match[2].trim();
     parts.push(
       <CodeBlock
-        key={`code-${match.index}`}
+        key={`code-${partIndex++}`}
         code={code}
         language={lang}
         onApply={onApplyCode ? (c) => onApplyCode(c, lang) : undefined}
@@ -179,14 +188,91 @@ function parseMessageContent(
   }
 
   if (lastIndex < content.length) {
+    const textAfter = content.slice(lastIndex);
     parts.push(
-      <span key={`text-${lastIndex}`} className="whitespace-pre-wrap">
-        {parseInlineMarkdown(content.slice(lastIndex))}
-      </span>
+      <div key={`text-block-${partIndex++}`} className="mb-2">
+        {parseBlockMarkdown(textAfter)}
+      </div>
     );
   }
 
   return parts;
+}
+
+/**
+ * Parses block-level markdown (headings, lists, paragraphs)
+ */
+function parseBlockMarkdown(text: string): React.ReactNode[] {
+  const lines = text.split('\n');
+  const elements: React.ReactNode[] = [];
+  let keyIndex = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    
+    if (!line) {
+      // Empty line - skip
+      continue;
+    }
+
+    // Headings: ###, ##, #
+    if (line.startsWith('### ')) {
+      elements.push(
+        <h3 key={`heading-${keyIndex++}`} className="text-base font-semibold text-foreground mt-3 mb-1">
+          {parseInlineMarkdown(line.slice(4))}
+        </h3>
+      );
+    } else if (line.startsWith('## ')) {
+      elements.push(
+        <h2 key={`heading-${keyIndex++}`} className="text-lg font-semibold text-foreground mt-3 mb-1">
+          {parseInlineMarkdown(line.slice(3))}
+        </h2>
+      );
+    } else if (line.startsWith('# ')) {
+      elements.push(
+        <h1 key={`heading-${keyIndex++}`} className="text-xl font-bold text-foreground mt-3 mb-2">
+          {parseInlineMarkdown(line.slice(2))}
+        </h1>
+      );
+    }
+    // Unordered list items: - or *
+    else if (line.startsWith('- ') || line.startsWith('* ')) {
+      elements.push(
+        <div key={`list-${keyIndex++}`} className="flex items-start gap-2 ml-4 my-1">
+          <span className="text-primary mt-1">•</span>
+          <span>{parseInlineMarkdown(line.slice(2))}</span>
+        </div>
+      );
+    }
+    // Ordered list items: 1. 2. 3.
+    else if (/^\d+\.\s/.test(line)) {
+      const match = line.match(/^(\d+)\.\s(.*)/);
+      if (match) {
+        elements.push(
+          <div key={`list-${keyIndex++}`} className="flex items-start gap-2 ml-4 my-1">
+            <span className="text-primary font-medium">{match[1]}.</span>
+            <span>{parseInlineMarkdown(match[2])}</span>
+          </div>
+        );
+      }
+    }
+    // Horizontal rule: --- or ***
+    else if (line === '---' || line === '***') {
+      elements.push(
+        <hr key={`hr-${keyIndex++}`} className="border-white/10 my-3" />
+      );
+    }
+    // Regular paragraph text
+    else {
+      elements.push(
+        <p key={`para-${keyIndex++}`} className="my-1 leading-relaxed">
+          {parseInlineMarkdown(line)}
+        </p>
+      );
+    }
+  }
+
+  return elements;
 }
 
 /**
