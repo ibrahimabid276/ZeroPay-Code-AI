@@ -4,6 +4,7 @@ import { useUIStore } from "@/stores/uiStore";
 import { FileExplorer } from "@/components/file-explorer/FileExplorer";
 import { ExtensionsPanel } from "@/components/extensions/ExtensionsPanel";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
+import { NotebookPanel } from "@/components/notebook/NotebookPanel";
 
 export function Sidebar() {
   const { activeSidebar, fileExplorerOpen } = useUIStore();
@@ -15,6 +16,7 @@ export function Sidebar() {
   return (
     <div className="h-full glass border-r border-white/10 animate-slide-in">
       {activeSidebar === 'explorer' && fileExplorerOpen && <FileExplorer />}
+      {activeSidebar === 'notebooks' && <NotebookPanel />}
       {activeSidebar === 'search' && (
         <div className="flex items-center justify-center h-full text-muted-foreground text-xs p-4">
           <div className="text-center">

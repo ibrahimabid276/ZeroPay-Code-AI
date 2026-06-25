@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Settings,
   Code2,
+  BookOpen,
 } from "lucide-react";
 import {
   Tooltip,
@@ -30,6 +31,12 @@ export function ActivityBar() {
       icon: FolderOpen,
       label: "Explorer",
       shortcut: "Ctrl+B",
+    },
+    {
+      id: "notebooks" as const,
+      icon: BookOpen,
+      label: "Notebooks",
+      shortcut: "Ctrl+Shift+N",
     },
     {
       id: "search" as const,
