@@ -6,64 +6,53 @@ import {
   GitBranch,
   Download,
   Sparkles,
-  Play,
-  Bug,
-  Terminal,
-  MessageSquare,
-  Puzzle,
   MoreVertical,
+  FolderOpen as FolderOpenIcon,
 } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-const RECENT_PROJECTS = [
-  {
-    id: "1",
-    name: "E-Commerce App",
-    path: "/Projects/ecommerce",
-    framework: "Next.js",
-    lastModified: "2m ago",
-    icon: "N",
-    color: "from-blue-500 to-cyan-500",
-  },
-  {
-    id: "2",
-    name: "AI Chatbot",
-    path: "/Projects/ai-chatbot",
-    framework: "React",
-    lastModified: "1h ago",
-    icon: "🤖",
-    color: "from-purple-500 to-pink-500",
-  },
-  {
-    id: "3",
-    name: "Portfolio Website",
-    path: "/Projects/portfolio",
-    framework: "Vue.js",
-    lastModified: "3h ago",
-    icon: "V",
-    color: "from-green-500 to-emerald-500",
-  },
-  {
-    id: "4",
-    name: "Task Manager",
-    path: "/Projects/task-manager",
-    framework: "Node.js",
-    lastModified: "Yesterday",
-    icon: "✓",
-    color: "from-orange-500 to-red-500",
-  },
+// Color mapping for project icons
+const PROJECT_COLORS = [
+  "from-blue-500 to-cyan-500",
+  "from-purple-500 to-pink-500",
+  "from-green-500 to-emerald-500",
+  "from-orange-500 to-red-500",
+  "from-indigo-500 to-purple-500",
+  "from-yellow-500 to-orange-500",
 ];
 
-const QUICK_ACTIONS = [
-  { icon: Play, label: "Run Project", description: "Start development server", action: "run" },
-  { icon: Bug, label: "Debug", description: "Start debugging session", action: "debug" },
-  { icon: Terminal, label: "Open Terminal", description: "Command line interface", action: "terminal" },
-  { icon: MessageSquare, label: "AI Assistant", description: "Get AI help & suggestions", action: "ai" },
-  { icon: Puzzle, label: "Extensions", description: "Manage your extensions", action: "extensions" },
-];
+// Get first letter of project name for icon
+const getProjectIcon = (name: string) => name.charAt(0).toUpperCase();
+
+// Calculate time ago from timestamp
+const getTimeAgo = (timestamp: number) => {
+  const now = Date.now();
+  const diffMs = now - timestamp;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(timestamp).toLocaleDateString();
+};
 
 export function WelcomeDashboard() {
-  const { projects } = useProjectStore();
+  const { projects, loadProjectsFromServer } = useProjectStore();
+  const router = useRouter();
+
+  // Load projects from server on mount
+  useEffect(() => {
+    loadProjectsFromServer();
+  }, [loadProjectsFromServer]);
+
+  const handleOpenProject = (projectId: string) => {
+    router.push(`/ide?projectId=${projectId}`);
+  };
 
   return (
     <div className="h-full overflow-auto bg-background p-6">
@@ -95,100 +84,91 @@ export function WelcomeDashboard() {
         </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-5 gap-3 mb-6 animate-fade-in">
-        <button className="glass p-4 rounded-xl hover-lift border border-white/10 flex flex-col items-center gap-2 transition-all">
-          <FilePlus className="w-6 h-6 text-primary" />
-          <span className="text-xs text-white font-medium">New File</span>
-          <span className="text-[10px] text-muted-foreground">Ctrl+N</span>
-        </button>
-        <button className="glass p-4 rounded-xl hover-lift border border-white/10 flex flex-col items-center gap-2 transition-all">
-          <FolderOpen className="w-6 h-6 text-primary" />
-          <span className="text-xs text-white font-medium">Open Folder</span>
-          <span className="text-[10px] text-muted-foreground">Ctrl+K</span>
-        </button>
-        <button className="glass p-4 rounded-xl hover-lift border border-white/10 flex flex-col items-center gap-2 transition-all">
-          <GitBranch className="w-6 h-6 text-primary" />
-          <span className="text-xs text-white font-medium">Clone Repo</span>
-          <span className="text-[10px] text-muted-foreground">Ctrl+Shift+P</span>
-        </button>
-        <button className="glass p-4 rounded-xl hover-lift border border-white/10 flex flex-col items-center gap-2 transition-all">
-          <Download className="w-6 h-6 text-primary" />
-          <span className="text-xs text-white font-medium">Import Project</span>
-          <span className="text-[10px] text-muted-foreground">Ctrl+Shift+I</span>
-        </button>
-        <button className="glass p-4 rounded-xl hover-lift border border-white/10 flex flex-col items-center gap-2 transition-all group">
-          <Sparkles className="w-6 h-6 text-primary group-hover:animate-pulse" />
-          <span className="text-xs text-white font-medium">AI Generate</span>
-          <span className="text-[10px] text-muted-foreground">Ctrl+Shift+A</span>
-        </button>
-      </div>
+      {/* Quick Actions - Removed as requested */}
 
-      {/* Recent Projects */}
+      {/* Projects Section */}
       <div className="mb-6 animate-fade-in">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-semibold text-white">Recent Projects</h3>
-          <button className="text-xs text-primary hover:underline">
-            View All →
-          </button>
+          <h3 className="text-sm font-semibold text-white">
+            {projects.length > 0 ? "Your Projects" : "No Projects Yet"}
+          </h3>
+          {projects.length > 0 && (
+            <button className="text-xs text-primary hover:underline">
+              View All →
+            </button>
+          )}
         </div>
-        <div className="grid grid-cols-4 gap-3">
-          {RECENT_PROJECTS.map((project) => (
-            <div
-              key={project.id}
-              className="glass rounded-xl p-4 border border-white/10 hover-lift cursor-pointer group"
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div
-                  className={`w-10 h-10 rounded-lg bg-gradient-to-br ${project.color} flex items-center justify-center`}
-                >
-                  <span className="text-white font-bold text-lg">
-                    {project.icon}
-                  </span>
-                </div>
-                <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/10 rounded">
-                  <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                </button>
-              </div>
-              <h4 className="text-sm font-semibold text-white mb-1">
-                {project.name}
-              </h4>
-              <p className="text-[10px] text-muted-foreground mb-2">
-                {project.path}
-              </p>
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-muted-foreground">
-                  {project.framework}
-                </span>
-                <span className="text-[10px] text-muted-foreground">
-                  {project.lastModified}
-                </span>
-              </div>
+
+        {projects.length === 0 ? (
+          // Empty state - no projects
+          <div className="glass rounded-xl p-8 border border-white/10 text-center">
+            <FolderOpenIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <h4 className="text-white font-semibold mb-2">No projects yet</h4>
+            <p className="text-sm text-muted-foreground mb-4">
+              Create your first project to get started
+            </p>
+            <div className="flex items-center justify-center gap-3">
+              <button className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+                <FilePlus className="w-4 h-4" />
+                New Project
+              </button>
+              <button className="px-4 py-2 rounded-lg glass border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2">
+                <FolderOpen className="w-4 h-4" />
+                Open Folder
+              </button>
             </div>
-          ))}
-        </div>
+          </div>
+        ) : (
+          // Show real user projects
+          <div className="grid grid-cols-4 gap-3">
+            {projects.map((project, index) => {
+              const color = PROJECT_COLORS[index % PROJECT_COLORS.length];
+              const icon = getProjectIcon(project.name);
+              const timeAgo = getTimeAgo(project.updatedAt || project.createdAt);
+
+              return (
+                <div
+                  key={project.id}
+                  onClick={() => handleOpenProject(project.id)}
+                  className="glass rounded-xl p-4 border border-white/10 hover-lift cursor-pointer group transition-all hover:border-primary/50"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div
+                      className={`w-10 h-10 rounded-lg bg-gradient-to-br ${color} flex items-center justify-center`}
+                    >
+                      <span className="text-white font-bold text-lg">
+                        {icon}
+                      </span>
+                    </div>
+                    <button
+                      onClick={(e) => e.stopPropagation()}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/10 rounded"
+                    >
+                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </div>
+                  <h4 className="text-sm font-semibold text-white mb-1 truncate">
+                    {project.name}
+                  </h4>
+                  <p className="text-[10px] text-muted-foreground mb-2 truncate">
+                    {project.path || "Local project"}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-muted-foreground">
+                      Project
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">
+                      {timeAgo}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Quick Actions Grid */}
-      <div className="animate-fade-in">
-        <h3 className="text-sm font-semibold text-white mb-3">Quick Actions</h3>
-        <div className="grid grid-cols-5 gap-3">
-          {QUICK_ACTIONS.map((action) => (
-            <button
-              key={action.action}
-              className="glass p-4 rounded-xl hover-lift border border-white/10 flex flex-col items-center gap-2 transition-all group"
-            >
-              <action.icon className="w-6 h-6 text-primary group-hover:scale-110 transition-transform" />
-              <span className="text-xs text-white font-medium text-center">
-                {action.label}
-              </span>
-              <span className="text-[10px] text-muted-foreground text-center">
-                {action.description}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Quick Actions Grid - Removed as requested */}
     </div>
   );
 }
