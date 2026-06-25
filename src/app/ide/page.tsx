@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { useProjectStore } from "@/stores/projectStore";
 import { useExtensionStore } from "@/stores/extensionStore";
+import { useAuthStore } from "@/stores/authStore";
+import { AuthModal } from "@/components/auth/AuthModal";
 
 /**
  * Initializes the project and extensions on app load:
@@ -46,10 +48,27 @@ function ProjectInitializer() {
 }
 
 export default function IDEPage() {
+  const { isAuthenticated, checkAuth } = useAuthStore();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  useEffect(() => {
+    // Check authentication on mount
+    checkAuth();
+  }, [checkAuth]);
+
+  // Show auth modal if not authenticated (optional - can make auth optional for now)
+  // Uncomment below to require authentication:
+  // useEffect(() => {
+  //   if (!isAuthenticated) {
+  //     setShowAuthModal(true);
+  //   }
+  // }, [isAuthenticated]);
+
   return (
     <ThemeProvider>
       <ProjectInitializer />
       <MainLayout />
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
     </ThemeProvider>
   );
 }

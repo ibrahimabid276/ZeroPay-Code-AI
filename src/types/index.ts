@@ -41,6 +41,81 @@ export interface TerminalLine {
 
 export type Theme = "dark" | "light" | "system";
 
+// Notebook Types
+export type CellType = 'code' | 'markdown' | 'sql' | 'bash';
+export type CellLanguage = 'python' | 'javascript' | 'sql' | 'bash' | 'markdown';
+export type RuntimeType = 'python' | 'nodejs' | 'bash';
+export type RuntimeStatus = 'stopped' | 'starting' | 'running' | 'error' | 'busy';
+export type OutputType = 'text' | 'html' | 'image' | 'dataframe' | 'chart' | 'error';
+
+export interface CellOutput {
+  id: string;
+  type: OutputType;
+  content: string;
+  metadata?: Record<string, any>;
+}
+
+export interface NotebookCell {
+  id: string;
+  type: CellType;
+  language: CellLanguage;
+  content: string;
+  output?: CellOutput[];
+  executionCount?: number;
+  executedAt?: number;
+  isRunning?: boolean;
+  metadata?: Record<string, any>;
+}
+
+export interface Notebook {
+  id: string;
+  userId: string;
+  projectId?: string;
+  title: string;
+  description?: string;
+  cells: NotebookCell[];
+  runtimeType: RuntimeType;
+  createdAt: number;
+  updatedAt: number;
+  lastExecutedAt?: number;
+  metadata?: {
+    kernelspec?: Record<string, any>;
+    languageInfo?: Record<string, any>;
+  };
+}
+
+export interface Runtime {
+  id: string;
+  notebookId: string;
+  type: RuntimeType;
+  status: RuntimeStatus;
+  processId?: number;
+  port?: number;
+  startedAt?: number;
+  error?: string;
+}
+
+export interface DatasetColumn {
+  name: string;
+  type: string;
+  nullable: boolean;
+  uniqueValues?: number;
+  missingValues?: number;
+  statistics?: Record<string, any>;
+}
+
+export interface Dataset {
+  id: string;
+  userId: string;
+  name: string;
+  type: 'csv' | 'excel' | 'json' | 'image';
+  path: string;
+  size: number;
+  columns?: DatasetColumn[];
+  preview?: Record<string, any>[];
+  uploadedAt: number;
+}
+
 export type ServerStatus = "stopped" | "starting" | "running" | "building" | "error";
 export type PreviewMode = "desktop" | "tablet" | "mobile";
 export type ViewMode = "editor" | "preview" | "split";
@@ -51,7 +126,7 @@ export type ExtensionCategory =
   | 'linters' | 'git-tools' | 'database-tools' | 'docker-tools'
   | 'testing-tools' | 'productivity-tools';
 export type ExtensionStatus = 'installed' | 'available' | 'updating' | 'error';
-export type ActiveSidebar = 'explorer' | 'search' | 'git' | 'run' | 'extensions' | 'github' | 'database' | 'chat' | 'settings' | null;
+export type ActiveSidebar = 'explorer' | 'search' | 'git' | 'run' | 'extensions' | 'github' | 'database' | 'notebooks' | 'chat' | 'settings' | null;
 
 export interface ServerProcess {
   projectId: string;

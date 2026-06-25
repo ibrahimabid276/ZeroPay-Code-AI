@@ -3,6 +3,7 @@
 import { useUIStore } from "@/stores/uiStore";
 import { FileExplorer } from "@/components/file-explorer/FileExplorer";
 import { ExtensionsPanel } from "@/components/extensions/ExtensionsPanel";
+import { SettingsPanel } from "@/components/settings/SettingsPanel";
 
 export function Sidebar() {
   const { activeSidebar, fileExplorerOpen } = useUIStore();
@@ -63,14 +64,7 @@ export function Sidebar() {
           </div>
         </div>
       )}
-      {activeSidebar === 'settings' && (
-        <div className="flex items-center justify-center h-full text-muted-foreground text-xs p-4">
-          <div className="text-center">
-            <p className="mb-2">Settings</p>
-            <p className="text-[10px]">Use Ctrl+, to open</p>
-          </div>
-        </div>
-      )}
+      {activeSidebar === 'settings' && <SettingsPanel />}
     </div>
   );
 }

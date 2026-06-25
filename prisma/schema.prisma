@@ -28,6 +28,11 @@ model User {
   conversations     Conversation[]
   preferences       UserPreference?
   githubAccounts    GithubAccount[]
+  databaseConnections DatabaseConnection[]
+  installedExtensions InstalledExtension[]
+  agentMemories     AgentMemory[]
+  notebooks         Notebook[]
+  datasets          Dataset[]
   
   @@index([email])
   @@index([username])
@@ -55,6 +60,11 @@ model Project {
   description String?
   path        String
   files       File[]
+  conversations Conversation[]
+  gitRepository GitRepository?
+  databaseConnections DatabaseConnection[]
+  searchIndices  SearchIndex[]
+  notebooks     Notebook[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
@@ -135,4 +145,202 @@ model GithubAccount {
   
   @@index([userId])
   @@index([githubId])
+}
+
+// Source Control
+model GitRepository {
+  id              String   @id @default(uuid())
+  projectId       String   @unique
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  remoteUrl       String?
+  currentBranch   String   @default("main")
+  lastCommitHash  String?
+  isInitialized   Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  commits         GitCommit[]
+  branches        GitBranch[]
+
+  @@index([projectId])
+}
+
+model GitCommit {
+  id          String        @id @default(uuid())
+  repoId      String
+  repository  GitRepository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  hash        String        @unique
+  message     String
+  author      String
+  email       String
+  timestamp   DateTime
+  parentId    String?
+  parent      GitCommit?    @relation("CommitHistory", fields: [parentId], references: [id], onDelete: SetNull)
+  children    GitCommit[]   @relation("CommitHistory")
+  files       GitFileChange[]
+
+  @@index([repoId])
+  @@index([hash])
+}
+
+model GitBranch {
+  id          String        @id @default(uuid())
+  repoId      String
+  repository  GitRepository @relation(fields: [repoId], references: [id], onDelete: Cascade)
+  name        String
+  isCurrent   Boolean       @default(false)
+  commitHash  String?
+  createdAt   DateTime      @default(now())
+
+  @@index([repoId])
+  @@unique([repoId, name])
+}
+
+model GitFileChange {
+  id          String   @id @default(uuid())
+  commitId    String
+  commit      GitCommit @relation(fields: [commitId], references: [id], onDelete: Cascade)
+  filePath    String
+  status      String
+  diff        String?
+  oldPath     String?
+
+  @@index([commitId])
+}
+
+// Database Tools
+model DatabaseConnection {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId   String?
+  project     Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  name        String
+  provider    String
+  host        String
+  port        Int
+  database    String
+  username    String
+  password    String
+  ssl         Boolean  @default(false)
+  isActive    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  queries     DatabaseQuery[]
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+model DatabaseQuery {
+  id             String             @id @default(uuid())
+  connectionId   String
+  connection     DatabaseConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  sql            String
+  result         Json?
+  executionTime  Int
+  status         String
+  error          String?
+  createdAt      DateTime           @default(now())
+
+  @@index([connectionId])
+}
+
+// Extensions (for cloud sync)
+model InstalledExtension {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  extensionId String
+  version     String
+  enabled     Boolean  @default(true)
+  settings    Json?
+  installedAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, extensionId])
+  @@index([userId])
+}
+
+// AI Agent Memory & Context
+model AgentMemory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String
+  value     Json
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, key])
+  @@index([userId])
+}
+
+// Search Index
+model SearchIndex {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  filePath  String
+  content   String
+  language  String?
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([filePath])
+}
+
+// Notebook System
+model Notebook {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  title          String
+  description    String?
+  content        Json     // Stores cells array as JSON
+  runtimeType    String   @default("python")
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  lastExecutedAt DateTime?
+
+  executions     NotebookExecution[]
+
+  @@index([userId])
+  @@index([projectId])
+}
+
+model NotebookExecution {
+  id          String   @id @default(uuid())
+  notebookId  String
+  notebook    Notebook @relation(fields: [notebookId], references: [id], onDelete: Cascade)
+  cellId      String
+  cellIndex   Int
+  code        String
+  output      Json?
+  error       String?
+  status      String
+  duration    Int
+  executedAt  DateTime @default(now())
+
+  @@index([notebookId])
+}
+
+model Dataset {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  type       String
+  path       String
+  size       Int
+  metadata   Json?
+  preview    Json?
+  uploadedAt DateTime @default(now())
+
+  @@index([userId])
 }
