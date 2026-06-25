@@ -5,6 +5,8 @@ import { FileExplorer } from "@/components/file-explorer/FileExplorer";
 import { ExtensionsPanel } from "@/components/extensions/ExtensionsPanel";
 import { SettingsPanel } from "@/components/settings/SettingsPanel";
 import { NotebookPanel } from "@/components/notebook/NotebookPanel";
+import { ChatPanel } from "@/components/chat/ChatPanel";
+import { TerminalPanel } from "@/components/terminal/TerminalPanel";
 
 export function Sidebar() {
   const { activeSidebar, fileExplorerOpen } = useUIStore();
@@ -20,8 +22,8 @@ export function Sidebar() {
       {activeSidebar === 'search' && (
         <div className="flex items-center justify-center h-full text-muted-foreground text-xs p-4">
           <div className="text-center">
-            <p className="mb-2">Search coming soon</p>
-            <p className="text-[10px]">Use Ctrl+P to search files</p>
+            <p className="mb-2">Global Search</p>
+            <p className="text-[10px]">Press Ctrl+Shift+F to search across files</p>
           </div>
         </div>
       )}
@@ -29,24 +31,17 @@ export function Sidebar() {
         <div className="flex items-center justify-center h-full text-muted-foreground text-xs p-4">
           <div className="text-center">
             <p className="mb-2">Source Control</p>
-            <p className="text-[10px]">Git integration coming soon</p>
+            <p className="text-[10px]">Git integration will be added soon</p>
           </div>
         </div>
       )}
-      {activeSidebar === 'run' && (
-        <div className="flex items-center justify-center h-full text-muted-foreground text-xs p-4">
-          <div className="text-center">
-            <p className="mb-2">Run & Debug</p>
-            <p className="text-[10px]">Debug tools coming soon</p>
-          </div>
-        </div>
-      )}
+      {activeSidebar === 'run' && <TerminalPanel />}
       {activeSidebar === 'extensions' && <ExtensionsPanel />}
       {activeSidebar === 'github' && (
         <div className="flex items-center justify-center h-full text-muted-foreground text-xs p-4">
           <div className="text-center">
             <p className="mb-2">GitHub</p>
-            <p className="text-[10px]">GitHub integration coming soon</p>
+            <p className="text-[10px]">GitHub integration will be added soon</p>
           </div>
         </div>
       )}
@@ -54,18 +49,11 @@ export function Sidebar() {
         <div className="flex items-center justify-center h-full text-muted-foreground text-xs p-4">
           <div className="text-center">
             <p className="mb-2">Database</p>
-            <p className="text-[10px]">Database tools coming soon</p>
+            <p className="text-[10px]">Database tools will be added soon</p>
           </div>
         </div>
       )}
-      {activeSidebar === 'chat' && (
-        <div className="flex items-center justify-center h-full text-muted-foreground text-xs p-4">
-          <div className="text-center">
-            <p className="mb-2">AI Chat</p>
-            <p className="text-[10px]">AI assistant coming soon</p>
-          </div>
-        </div>
-      )}
+      {activeSidebar === 'chat' && <ChatPanel />}
       {activeSidebar === 'settings' && <SettingsPanel />}
     </div>
   );

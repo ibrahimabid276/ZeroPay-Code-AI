@@ -47,6 +47,10 @@ export function WelcomeDashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [projectName, setProjectName] = useState("");
+  const [selectedProject, setSelectedProject] = useState<any>(null);
+  const [showOptionsDialog, setShowOptionsDialog] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
 
   // Load projects from server on mount
   useEffect(() => {
@@ -78,8 +82,38 @@ export function WelcomeDashboard() {
   };
 
   const handleViewAll = () => {
-    // Could navigate to a projects listing page
-    alert("Projects page coming soon!");
+    // Refresh projects list
+    loadProjectsFromServer();
+  };
+
+  const handleProjectOptions = (project: any) => {
+    setSelectedProject(project);
+    setShowOptionsDialog(true);
+    setNewProjectName(project.name);
+  };
+
+  const handleRenameProject = async () => {
+    if (!newProjectName.trim() || !selectedProject) return;
+    
+    setIsRenaming(true);
+    // TODO: Implement rename API endpoint
+    // For now, just close the dialog
+    setTimeout(() => {
+      setIsRenaming(false);
+      setShowOptionsDialog(false);
+      loadProjectsFromServer();
+    }, 500);
+  };
+
+  const handleDeleteProject = async () => {
+    if (!selectedProject) return;
+    
+    if (confirm(`Are you sure you want to delete "${selectedProject.name}"? This action cannot be undone.`)) {
+      // TODO: Implement delete API endpoint
+      // For now, just close the dialog
+      setShowOptionsDialog(false);
+      loadProjectsFromServer();
+    }
   };
 
   return (
@@ -180,8 +214,7 @@ export function WelcomeDashboard() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        // TODO: Add project options menu (rename, delete, duplicate)
-                        alert("Project options coming soon!");
+                        handleProjectOptions(project);
                       }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/10 rounded"
                       title="Project options"
@@ -261,6 +294,66 @@ export function WelcomeDashboard() {
                     Create Project
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Project Options Dialog */}
+      {showOptionsDialog && selectedProject && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="glass rounded-xl p-6 border border-white/10 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-white mb-4">Project Options</h3>
+            <div className="mb-4">
+              <label className="block text-sm text-muted-foreground mb-2">
+                Rename Project
+              </label>
+              <input
+                type="text"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleRenameProject();
+                  }
+                }}
+                placeholder="Project name"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary mb-3"
+                autoFocus
+              />
+              <button
+                onClick={handleRenameProject}
+                disabled={!newProjectName.trim() || isRenaming}
+                className="w-full px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 mb-4"
+              >
+                {isRenaming ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Renaming...
+                  </>
+                ) : (
+                  "Rename Project"
+                )}
+              </button>
+            </div>
+            <div className="border-t border-white/10 pt-4">
+              <button
+                onClick={handleDeleteProject}
+                className="w-full px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-colors flex items-center justify-center gap-2"
+              >
+                Delete Project
+              </button>
+            </div>
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => {
+                  setShowOptionsDialog(false);
+                  setSelectedProject(null);
+                }}
+                className="px-4 py-2 rounded-lg glass border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>
