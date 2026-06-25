@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { spawn } from 'child_process';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -86,6 +85,9 @@ async function executeCode(code: string, language: string): Promise<{
   duration: number;
 }> {
   const startTime = Date.now();
+
+  // Dynamic import to prevent Turbopack build-time analysis
+  const { spawn } = await import('child_process');
 
   return new Promise((resolve) => {
     // Use explicit command mapping for Turbopack compatibility
