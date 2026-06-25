@@ -3,7 +3,7 @@ import { readFile, access } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 
-const getProjectsDir = () => process.env.PROJECTS_DIR || join(/*turbopackIgnore: true*/ process.cwd(), ".projects");
+const getProjectsDir = () => process.env.PROJECTS_DIR || join(/* turbopackIgnore: true */ process.cwd(), ".projects");
 
 interface PackageJson {
   scripts?: Record<string, string>;

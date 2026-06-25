@@ -3,7 +3,7 @@ import { spawn, ChildProcess } from "child_process";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
 
-const getProjectsDir = () => process.env.PROJECTS_DIR || join(/*turbopackIgnore: true*/ process.cwd(), ".projects");
+const getProjectsDir = () => process.env.PROJECTS_DIR || join(/* turbopackIgnore: true */ process.cwd(), ".projects");
 
 // In-memory process tracking
 interface ActiveServer {
