@@ -3,6 +3,8 @@ import { readFile, access } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
 
+export const dynamic = 'force-dynamic';
+
 const getProjectsDir = () => process.env.PROJECTS_DIR || join(/* turbopackIgnore: true */ process.cwd(), ".projects");
 
 interface PackageJson {

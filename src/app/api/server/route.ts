@@ -3,6 +3,9 @@ import { spawn, ChildProcess } from "child_process";
 import { join } from "path";
 import { existsSync, mkdirSync } from "fs";
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const getProjectsDir = () => process.env.PROJECTS_DIR || join(/* turbopackIgnore: true */ process.cwd(), ".projects");
 
 // In-memory process tracking

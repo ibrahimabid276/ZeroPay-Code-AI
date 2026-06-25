@@ -3,6 +3,9 @@ import { requireAuth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { spawn } from 'child_process';
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -85,31 +88,16 @@ async function executeCode(code: string, language: string): Promise<{
   const startTime = Date.now();
 
   return new Promise((resolve) => {
-    let execCommand: string;
-    let args: string[];
-    const isWindows = process.platform === 'win32';
-
-    switch (language) {
-      case 'python':
-        execCommand = isWindows ? 'python' : 'python3';
-        args = ['-c', code];
-        break;
-      case 'javascript':
-      case 'nodejs':
-        execCommand = 'node';
-        args = ['-e', code];
-        break;
-      case 'bash':
-        execCommand = isWindows ? 'cmd.exe' : 'bash';
-        args = isWindows ? ['/c', code] : ['-c', code];
-        break;
-      default:
-        resolve({
-          outputs: [],
-          error: `Unsupported language: ${language}`,
-          duration: 0,
-        });
-        return;
+    // Use explicit command mapping for Turbopack compatibility
+    let execCommand = 'node';
+    let args: string[] = ['-e', code];
+    
+    if (language === 'python') {
+      execCommand = 'python3';
+      args = ['-c', code];
+    } else if (language === 'bash') {
+      execCommand = 'bash';
+      args = ['-c', code];
     }
 
     const childProcess = spawn(execCommand, args, {
