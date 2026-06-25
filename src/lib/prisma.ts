@@ -6,12 +6,8 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 // Create PrismaClient instance
-// Prisma will automatically read DATABASE_URL from environment variables
-function createPrismaClient(): PrismaClient {
-  return new PrismaClient();
-}
-
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+// DATABASE_URL must be set in environment variables
+export const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
