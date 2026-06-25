@@ -89,6 +89,62 @@ function CodeBlock({
 }
 
 /**
+ * Parses inline markdown formatting (bold, italic, inline code)
+ * Returns an array of React nodes
+ */
+function parseInlineMarkdown(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  
+  // Regex for **bold**, *italic*, and `inline code`
+  const inlineRegex = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
+  let match;
+  
+  while ((match = inlineRegex.exec(text)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    
+    const matched = match[0];
+    
+    // Bold: **text**
+    if (matched.startsWith('**') && matched.endsWith('**')) {
+      parts.push(
+        <strong key={`bold-${match.index}`} className="font-semibold text-foreground">
+          {matched.slice(2, -2)}
+        </strong>
+      );
+    }
+    // Italic: *text*
+    else if (matched.startsWith('*') && matched.endsWith('*')) {
+      parts.push(
+        <em key={`italic-${match.index}`} className="italic">
+          {matched.slice(1, -1)}
+        </em>
+      );
+    }
+    // Inline code: `text`
+    else if (matched.startsWith('`') && matched.endsWith('`')) {
+      parts.push(
+        <code key={`code-${match.index}`} className="px-1.5 py-0.5 bg-muted rounded text-xs font-mono text-primary">
+          {matched.slice(1, -1)}
+        </code>
+      );
+    }
+    
+    lastIndex = match.index + matched.length;
+  }
+  
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  
+  return parts;
+}
+
+/**
  * Parses message content to extract markdown code blocks and plain text segments.
  * Returns an array of React nodes for rendering.
  */
@@ -105,7 +161,7 @@ function parseMessageContent(
     if (match.index > lastIndex) {
       parts.push(
         <span key={`text-${lastIndex}`} className="whitespace-pre-wrap">
-          {content.slice(lastIndex, match.index)}
+          {parseInlineMarkdown(content.slice(lastIndex, match.index))}
         </span>
       );
     }
@@ -125,7 +181,7 @@ function parseMessageContent(
   if (lastIndex < content.length) {
     parts.push(
       <span key={`text-${lastIndex}`} className="whitespace-pre-wrap">
-        {content.slice(lastIndex)}
+        {parseInlineMarkdown(content.slice(lastIndex))}
       </span>
     );
   }
