@@ -10,7 +10,7 @@ import {
   FolderOpen as FolderOpenIcon,
 } from "lucide-react";
 import { useProjectStore } from "@/stores/projectStore";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // Color mapping for project icons
@@ -42,8 +42,11 @@ const getTimeAgo = (timestamp: number) => {
 };
 
 export function WelcomeDashboard() {
-  const { projects, loadProjectsFromServer } = useProjectStore();
+  const { projects, loadProjectsFromServer, createProject } = useProjectStore();
   const router = useRouter();
+  const [isCreating, setIsCreating] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [projectName, setProjectName] = useState("");
 
   // Load projects from server on mount
   useEffect(() => {
@@ -52,6 +55,31 @@ export function WelcomeDashboard() {
 
   const handleOpenProject = (projectId: string) => {
     router.push(`/ide?projectId=${projectId}`);
+  };
+
+  const handleNewProject = async () => {
+    if (!projectName.trim()) return;
+    
+    setIsCreating(true);
+    const project = await createProject(projectName.trim());
+    setIsCreating(false);
+    
+    if (project) {
+      setShowCreateDialog(false);
+      setProjectName("");
+      router.push(`/ide?projectId=${project.id}`);
+    }
+  };
+
+  const handleOpenFolder = async () => {
+    // Open folder dialog - this will work in Electron/desktop app
+    // For web version, we'll show a message
+    alert("Open Folder feature is available in the desktop version.\n\nFor now, please use 'New Project' to create a project.");
+  };
+
+  const handleViewAll = () => {
+    // Could navigate to a projects listing page
+    alert("Projects page coming soon!");
   };
 
   return (
@@ -93,7 +121,10 @@ export function WelcomeDashboard() {
             {projects.length > 0 ? "Your Projects" : "No Projects Yet"}
           </h3>
           {projects.length > 0 && (
-            <button className="text-xs text-primary hover:underline">
+            <button 
+              onClick={handleViewAll}
+              className="text-xs text-primary hover:underline"
+            >
               View All →
             </button>
           )}
@@ -108,11 +139,17 @@ export function WelcomeDashboard() {
               Create your first project to get started
             </p>
             <div className="flex items-center justify-center gap-3">
-              <button className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2">
+              <button 
+                onClick={() => setShowCreateDialog(true)}
+                className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
+              >
                 <FilePlus className="w-4 h-4" />
                 New Project
               </button>
-              <button className="px-4 py-2 rounded-lg glass border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2">
+              <button 
+                onClick={handleOpenFolder}
+                className="px-4 py-2 rounded-lg glass border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors flex items-center gap-2"
+              >
                 <FolderOpen className="w-4 h-4" />
                 Open Folder
               </button>
@@ -141,8 +178,13 @@ export function WelcomeDashboard() {
                       </span>
                     </div>
                     <button
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // TODO: Add project options menu (rename, delete, duplicate)
+                        alert("Project options coming soon!");
+                      }}
                       className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-white/10 rounded"
+                      title="Project options"
                     >
                       <MoreVertical className="w-4 h-4 text-muted-foreground" />
                     </button>
@@ -169,6 +211,61 @@ export function WelcomeDashboard() {
       </div>
 
       {/* Quick Actions Grid - Removed as requested */}
+
+      {/* Create Project Dialog */}
+      {showCreateDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
+          <div className="glass rounded-xl p-6 border border-white/10 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-white mb-4">Create New Project</h3>
+            <div className="mb-4">
+              <label className="block text-sm text-muted-foreground mb-2">
+                Project Name
+              </label>
+              <input
+                type="text"
+                value={projectName}
+                onChange={(e) => setProjectName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleNewProject();
+                  }
+                }}
+                placeholder="My Awesome Project"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder:text-muted-foreground focus:outline-none focus:border-primary"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowCreateDialog(false);
+                  setProjectName("");
+                }}
+                className="px-4 py-2 rounded-lg glass border border-white/10 text-white text-sm font-medium hover:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleNewProject}
+                disabled={!projectName.trim() || isCreating}
+                className="px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {isCreating ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <FilePlus className="w-4 h-4" />
+                    Create Project
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
