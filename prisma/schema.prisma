@@ -29,6 +29,8 @@ model User {
   githubAccounts    GithubAccount[]
   databaseConnections DatabaseConnection[]
   installedExtensions InstalledExtension[]
+  extensions        Extension[]
+  extensionPermissions ExtensionPermission[]
   agentMemories     AgentMemory[]
   notebooks         Notebook[]
   datasets          Dataset[]
@@ -342,4 +344,50 @@ model Dataset {
   uploadedAt DateTime @default(now())
 
   @@index([userId])
+}
+
+// Extension System
+model Extension {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  extensionId     String   // Extension package ID (e.g., "prettier.prettier-vscode")
+  name            String
+  displayName     String
+  description     String
+  version         String
+  publisher       String
+  category        String
+  manifest        Json     // Full package.json
+  permissions     String[] // Requested permissions
+  grantedPermissions String[] // Approved permissions
+  state           String   @default("inactive") // inactive, activating, active, disabled, error
+  activatedAt     DateTime?
+  deactivatedAt   DateTime?
+  error           String?
+  securityLevel   String   @default("medium")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  permissions     ExtensionPermission[]
+
+  @@unique([userId, extensionId])
+  @@index([userId])
+  @@index([state])
+}
+
+model ExtensionPermission {
+  id            String    @id @default(uuid())
+  extensionId   String
+  extension     Extension @relation(fields: [extensionId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission    String    // Permission string (e.g., "files:read")
+  granted       Boolean   @default(false)
+  grantedAt     DateTime?
+  requestedAt   DateTime  @default(now())
+
+  @@unique([extensionId, permission, userId])
+  @@index([userId])
+  @@index([extensionId])
 }

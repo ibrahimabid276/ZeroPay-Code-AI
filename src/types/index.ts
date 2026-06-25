@@ -192,3 +192,6 @@ export interface UIState {
   previewMode: PreviewMode;
   activeSidebar: ActiveSidebar;
 }
+
+// Re-export extension types
+export * from './extension';
