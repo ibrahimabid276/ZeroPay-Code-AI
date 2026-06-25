@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { useUIStore } from "@/stores/uiStore";
 import { useProjectStore } from "@/stores/projectStore";
+import { useAuthStore } from "@/stores/authStore";
+import { AuthModal } from "@/components/auth/AuthModal";
 import {
   Sun,
   Moon,
@@ -13,6 +15,10 @@ import {
   Sparkles,
   Code2,
   ChevronDown,
+  LogIn,
+  UserPlus,
+  LogOut,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,7 +47,10 @@ export function TopBar() {
     toggleTerminal,
   } = useUIStore();
   const { currentProject } = useProjectStore();
+  const { isAuthenticated, user, logout } = useAuthStore();
   const [mounted, setMounted] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -129,15 +138,65 @@ export function TopBar() {
 
         <div className="w-px h-5 bg-white/10" />
 
-        <button className="px-3 py-1.5 text-xs text-muted-foreground hover:text-white flex items-center gap-2 transition-colors">
-          <Users className="w-3.5 h-3.5" />
-          Invite Team
-        </button>
+        <div className="w-px h-5 bg-white/10" />
 
-        <button className="px-4 py-1.5 text-xs font-medium text-white gradient-primary rounded-lg hover:opacity-90 transition-opacity glow-purple flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5" />
-          Ask AI
-        </button>
+        {/* Auth Buttons or User Menu */}
+        {!isAuthenticated ? (
+          <>
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="px-3 py-1.5 text-xs text-muted-foreground hover:text-white flex items-center gap-2 transition-colors"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              Login
+            </button>
+            <button
+              onClick={() => {
+                setShowAuthModal(true);
+              }}
+              className="px-3 py-1.5 text-xs font-medium text-white bg-primary/20 border border-primary/30 hover:bg-primary/30 rounded-lg transition-all flex items-center gap-2"
+            >
+              <UserPlus className="w-3.5 h-3.5" />
+              Register
+            </button>
+          </>
+        ) : (
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-white/5 transition-colors"
+            >
+              <div className="w-7 h-7 rounded-full gradient-primary flex items-center justify-center">
+                <span className="text-xs text-white font-medium">
+                  {user?.name?.charAt(0) || user?.username?.charAt(0) || 'U'}
+                </span>
+              </div>
+              <span className="text-xs text-white font-medium">
+                {user?.name || user?.username}
+              </span>
+              <ChevronDown className="w-3 h-3 text-muted-foreground" />
+            </button>
+            
+            {showUserMenu && (
+              <div className="absolute right-0 top-full mt-2 w-48 glass-strong border border-white/10 rounded-lg shadow-xl animate-scale-in z-50">
+                <div className="p-3 border-b border-white/10">
+                  <p className="text-xs text-white font-medium">{user?.name || user?.username}</p>
+                  <p className="text-[10px] text-muted-foreground">{user?.email}</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    await logout();
+                    setShowUserMenu(false);
+                  }}
+                  className="w-full px-3 py-2 text-xs text-red-400 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Logout
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         <button className="relative p-2 text-muted-foreground hover:text-white transition-colors">
           <Bell className="w-4 h-4" />
@@ -170,9 +229,12 @@ export function TopBar() {
         </Select>
 
         <div className="w-8 h-8 rounded-full gradient-subtle border border-white/10 flex items-center justify-center cursor-pointer hover:border-white/20 transition-colors">
-          <span className="text-xs text-white font-medium">U</span>
+          <span className="text-xs text-white font-medium">{user?.name?.charAt(0) || user?.username?.charAt(0) || 'U'}</span>
         </div>
       </div>
+
+      {/* Auth Modal */}
+      {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
     </div>
   );
 }
