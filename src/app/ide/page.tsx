@@ -6,22 +6,60 @@ import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { useProjectStore } from "@/stores/projectStore";
 import { useExtensionStore } from "@/stores/extensionStore";
 import { useAuthStore } from "@/stores/authStore";
+import { useEditorStore } from "@/stores/editorStore";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { DemoBanner } from "@/components/layout/DemoBanner";
+import { isFirstTimeUser, createDemoProject, DEMO_PROJECT_ID } from "@/lib/demo-project";
 
 /**
  * Initializes the project and extensions on app load:
- * 1. Loads projects from server
- * 2. Creates a default project if none exist
- * 3. Refreshes the file tree for the active project
- * 4. Loads extensions catalog
+ * 1. Checks if first-time user
+ * 2. Creates demo project for first-time users
+ * 3. Loads projects from server
+ * 4. Creates a default project if none exist
+ * 5. Refreshes the file tree for the active project
+ * 6. Loads extensions catalog
  */
 function ProjectInitializer() {
-  const { currentProject, refreshFileTree, loadProjectsFromServer, createProject } =
+  const { currentProject, refreshFileTree, loadProjectsFromServer, createProject, setCurrentProject, setFileTree } =
     useProjectStore();
+  const { openTab } = useEditorStore();
   const { loadExtensions } = useExtensionStore();
 
   useEffect(() => {
     const initProject = async () => {
+      // Check if this is a first-time user
+      if (isFirstTimeUser()) {
+        // Create demo project
+        const demoProject = await createDemoProject();
+        
+        if (demoProject) {
+          // Set demo project as current
+          setCurrentProject({
+            id: demoProject.id,
+            name: demoProject.name,
+            path: `.projects/${demoProject.id}`,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          });
+          
+          // Refresh file tree to load demo files
+          await refreshFileTree();
+          
+          // Open README.md by default
+          setTimeout(() => {
+            openTab({
+              fileName: "README.md",
+              filePath: "README.md",
+              language: "markdown",
+              content: "",
+            });
+          }, 500);
+          
+          return;
+        }
+      }
+
       // Load projects from server (will restore persisted selection from localStorage)
       await loadProjectsFromServer();
 
@@ -35,7 +73,7 @@ function ProjectInitializer() {
     
     // Load extensions
     loadExtensions();
-  }, [loadProjectsFromServer, createProject, loadExtensions]);
+  }, [loadProjectsFromServer, createProject, loadExtensions, setCurrentProject, refreshFileTree, openTab]);
 
   // Refresh file tree whenever the current project changes
   useEffect(() => {
@@ -67,6 +105,7 @@ export default function IDEPage() {
   return (
     <ThemeProvider>
       <ProjectInitializer />
+      <DemoBanner />
       <MainLayout />
       {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
     </ThemeProvider>
