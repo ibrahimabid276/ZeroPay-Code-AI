@@ -359,7 +359,7 @@ model Extension {
   publisher       String
   category        String
   manifest        Json     // Full package.json
-  permissions     String[] // Requested permissions
+  requestedPermissions String[] // Requested permissions
   grantedPermissions String[] // Approved permissions
   state           String   @default("inactive") // inactive, activating, active, disabled, error
   activatedAt     DateTime?
@@ -369,7 +369,7 @@ model Extension {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  permissions     ExtensionPermission[]
+  permissionRecords     ExtensionPermission[]
 
   @@unique([userId, extensionId])
   @@index([userId])

@@ -37,7 +37,7 @@ class ExtensionRuntimeManager {
       update: {
         version: manifest.version,
         manifest: manifest as any,
-        permissions,
+        requestedPermissions: permissions,
         state: 'inactive',
       },
       create: {
@@ -50,7 +50,7 @@ class ExtensionRuntimeManager {
         publisher: manifest.publisher,
         category: manifest.categories[0] || 'other',
         manifest: manifest as any,
-        permissions,
+        requestedPermissions: permissions,
         grantedPermissions: [],
         state: 'inactive',
         securityLevel,
@@ -336,11 +336,11 @@ class ExtensionRuntimeManager {
     const extensions = await prisma.extension.findMany({
       where: { userId },
       include: {
-        permissions: true,
+        permissionRecords: true,
       },
     });
 
-    return extensions.map(ext => {
+    return extensions.map((ext: any) => {
       const instance = this.extensions.get(ext.id);
       if (instance) {
         return instance;
@@ -411,7 +411,7 @@ class ExtensionRuntimeManager {
     for (const ext of extensions) {
       const instance: ExtensionInstance = {
         id: ext.id,
-        manifest: ext.manifest as ExtensionManifest,
+        manifest: ext.manifest as unknown as ExtensionManifest,
         state: ext.state as ExtensionState,
         grantedPermissions: ext.grantedPermissions as ExtensionPermission[],
         contributedCommands: (ext.manifest as any).contributes?.commands || [],
