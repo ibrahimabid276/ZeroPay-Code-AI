@@ -45,7 +45,14 @@ export function MainLayout() {
   } = useUIStore();
   const { tabs, activeTabId } = useEditorStore();
   const { fileTree } = useProjectStore();
-  const hasOpenFiles = tabs.length > 0;
+  
+  // Fix hydration error: wait for client mount before rendering dynamic content
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  
+  const hasOpenFiles = isMounted && tabs.length > 0;
 
   // Modal states
   const [showShortcuts, setShowShortcuts] = useState(false);
