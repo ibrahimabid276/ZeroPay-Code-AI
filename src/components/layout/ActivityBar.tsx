@@ -1,16 +1,13 @@
 "use client";
 
 import { useUIStore } from "@/stores/uiStore";
+import { useProjectStore } from "@/stores/projectStore";
 import {
-  FolderOpen,
+  Files,
   Search,
   GitBranch,
-  Play,
-  Database,
-  MessageSquare,
+  Bot,
   Settings,
-  Code2,
-  BookOpen,
 } from "lucide-react";
 import {
   Tooltip,
@@ -20,19 +17,18 @@ import {
 
 export function ActivityBar() {
   const { activeSidebar, setActiveSidebar } = useUIStore();
+  const { fileTree } = useProjectStore();
 
-  const activities = [
+  // Count git changes (placeholder - would come from git store)
+  const gitChanges = 3; // TODO: Get from actual git status
+  const aiNotifications = 2; // TODO: Get from chat store
+
+  const topActivities = [
     {
       id: "explorer" as const,
-      icon: FolderOpen,
+      icon: Files,
       label: "Explorer",
       shortcut: "Ctrl+B",
-    },
-    {
-      id: "notebooks" as const,
-      icon: BookOpen,
-      label: "Notebooks",
-      shortcut: "Ctrl+Shift+N",
     },
     {
       id: "search" as const,
@@ -45,33 +41,18 @@ export function ActivityBar() {
       icon: GitBranch,
       label: "Source Control",
       shortcut: "Ctrl+Shift+G",
-      badge: 3,
-    },
-    {
-      id: "run" as const,
-      icon: Play,
-      label: "Run & Debug",
-      shortcut: "Ctrl+Shift+D",
-    },
-    {
-      id: "github" as const,
-      icon: Code2,
-      label: "GitHub",
-      shortcut: "Ctrl+Shift+H",
-    },
-    {
-      id: "database" as const,
-      icon: Database,
-      label: "Database",
-      shortcut: "Ctrl+Shift+V",
+      badge: gitChanges,
     },
     {
       id: "chat" as const,
-      icon: MessageSquare,
+      icon: Bot,
       label: "AI Chat",
       shortcut: "Ctrl+L",
-      badge: 2,
+      badge: aiNotifications,
     },
+  ];
+
+  const bottomActivities = [
     {
       id: "settings" as const,
       icon: Settings,
@@ -80,42 +61,80 @@ export function ActivityBar() {
     },
   ];
 
-  return (
-    <div className="w-[50px] glass border-r border-white/10 flex flex-col items-center py-2 gap-1">
-      {activities.map(({ id, icon: Icon, label, shortcut, badge }) => (
-        <Tooltip key={id} delayDuration={500}>
-          <TooltipTrigger asChild>
-            <button
-              onClick={() => setActiveSidebar(id)}
-              className={`relative w-12 h-12 flex items-center justify-center transition-all rounded-lg ${
-                activeSidebar === id
-                  ? "bg-white/10 text-primary glow-purple"
-                  : "text-muted-foreground hover:text-white hover:bg-white/5"
-              }`}
-              title={label}
-            >
-              <Icon className="h-5 w-5" />
-              {badge && badge > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center gradient-primary text-white text-[10px] font-semibold rounded-full shadow-lg">
-                  {badge > 99 ? "99+" : badge}
-                </span>
-              )}
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="right" className="glass-strong border-white/10">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-medium text-white">{label}</span>
-              <span className="text-xs text-muted-foreground">{shortcut}</span>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      ))}
+  const handleActivityClick = (id: typeof topActivities[number]["id"] | typeof bottomActivities[number]["id"]) => {
+    // If clicking the active panel, collapse it (toggle off)
+    setActiveSidebar(id);
+  };
 
+  return (
+    <div className="w-[50px] bg-background border-r border-border flex flex-col items-center py-2">
+      {/* Top icons */}
+      <div className="flex flex-col items-center gap-1">
+        {topActivities.map(({ id, icon: Icon, label, shortcut, badge }) => {
+          const isActive = activeSidebar === id;
+          
+          return (
+            <Tooltip key={id} delayDuration={400}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => handleActivityClick(id)}
+                  className={`relative w-12 h-12 flex items-center justify-center transition-all duration-150 ${
+                    isActive
+                      ? "text-foreground border-l-2 border-primary bg-accent/50"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
+                  }`}
+                  aria-label={label}
+                >
+                  <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+                  {badge && badge > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center bg-primary text-primary-foreground text-[10px] font-semibold rounded-full shadow-sm">
+                      {badge > 99 ? "99+" : badge}
+                    </span>
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium">{label}</span>
+                <span className="text-xs text-muted-foreground">{shortcut}</span>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
+
+      {/* Spacer to push bottom icons down */}
       <div className="flex-1" />
 
-      {/* Bottom icons */}
+      {/* Bottom icons (Settings) */}
       <div className="flex flex-col items-center gap-1 pb-2">
-        {/* Future: Add more bottom icons if needed */}
+        {/* Separator line */}
+        <div className="w-6 h-px bg-border mb-1" />
+        
+        {bottomActivities.map(({ id, icon: Icon, label, shortcut }) => {
+          const isActive = activeSidebar === id;
+          
+          return (
+            <Tooltip key={id} delayDuration={400}>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => handleActivityClick(id)}
+                  className={`relative w-12 h-12 flex items-center justify-center transition-all duration-150 ${
+                    isActive
+                      ? "text-foreground border-l-2 border-primary bg-accent/50"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
+                  }`}
+                  aria-label={label}
+                >
+                  <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 2} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium">{label}</span>
+                <span className="text-xs text-muted-foreground">{shortcut}</span>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
       </div>
     </div>
   );
