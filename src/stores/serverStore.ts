@@ -7,6 +7,8 @@ import { v4 as uuid } from "uuid";
 
 interface ServerState {
   server: ServerProcess | null;
+  isExecuting: boolean;
+  executionController: AbortController | null;
   setServer: (server: ServerProcess | null) => void;
   updateStatus: (status: ServerStatus) => void;
   addLog: (content: string, type?: TerminalLine["type"]) => void;
@@ -15,10 +17,14 @@ interface ServerState {
   stopServer: () => Promise<void>;
   restartServer: () => Promise<void>;
   detectProjectType: () => Promise<ProjectDetection>;
+  executeCode: (code: string, language: string, filePath?: string) => Promise<void>;
+  stopExecution: () => void;
 }
 
 export const useServerStore = create<ServerState>((set, get) => ({
   server: null,
+  isExecuting: false,
+  executionController: null,
 
   setServer: (server) => set({ server }),
 
@@ -186,5 +192,123 @@ export const useServerStore = create<ServerState>((set, get) => ({
     await get().stopServer();
     await new Promise((resolve) => setTimeout(resolve, 500));
     await get().startServer();
+  },
+
+  executeCode: async (code: string, language: string, filePath?: string) => {
+    // Cancel any ongoing execution
+    get().stopExecution();
+
+    const controller = new AbortController();
+    set({ isExecuting: true, executionController: controller });
+
+    // Update server status to show "Running..."
+    set({
+      server: {
+        projectId: "",
+        status: "starting",
+        port: null,
+        previewUrl: null,
+        command: `${language} execution`,
+        logs: [],
+        error: null,
+        startedAt: Date.now(),
+      },
+    });
+
+    get().clearLogs();
+    get().addLog(`▶ Running ${language || "JavaScript"} code...`);
+    get().addLog("");
+
+    try {
+      const response = await fetch("/api/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, language, filePath }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        get().addLog(`✗ Execution failed: ${error.error || "Unknown error"}`, "error");
+        set({
+          server: {
+            projectId: "",
+            status: "error",
+            port: null,
+            previewUrl: null,
+            command: "",
+            logs: get().server?.logs || [],
+            error: error.error,
+            startedAt: null,
+          },
+        });
+        return;
+      }
+
+      const result = await response.json();
+
+      // Display output
+      if (result.output) {
+        get().addLog(result.output);
+      }
+
+      // Display errors in red
+      if (result.error) {
+        get().addLog(result.error, "error");
+      }
+
+      // Display execution stats
+      get().addLog("");
+      if (result.executionTime) {
+        get().addLog(`⏱ Execution time: ${result.executionTime}s`);
+      }
+      if (result.memoryUsage) {
+        get().addLog(`💾 Memory used: ${result.memoryUsage} KB`);
+      }
+      get().addLog(`✓ Process finished with exit code ${result.statusCode === 3 ? 0 : result.statusCode}`);
+
+      // Update status
+      set({
+        server: {
+          projectId: "",
+          status: result.success ? "stopped" : "error",
+          port: null,
+          previewUrl: null,
+          command: "",
+          logs: get().server?.logs || [],
+          error: result.error,
+          startedAt: null,
+        },
+      });
+    } catch (error: any) {
+      if (error.name === "AbortError") {
+        get().addLog("⏹ Execution cancelled", "output");
+        get().addLog("✓ Process stopped", "output");
+      } else {
+        get().addLog(`✗ Execution error: ${error.message || "Unknown error"}`, "error");
+        set({
+          server: {
+            projectId: "",
+            status: "error",
+            port: null,
+            previewUrl: null,
+            command: "",
+            logs: get().server?.logs || [],
+            error: error.message,
+            startedAt: null,
+          },
+        });
+      }
+    } finally {
+      set({ isExecuting: false, executionController: null });
+    }
+  },
+
+  stopExecution: () => {
+    const controller = get().executionController;
+    if (controller) {
+      controller.abort();
+      set({ executionController: null });
+    }
   },
 }));
