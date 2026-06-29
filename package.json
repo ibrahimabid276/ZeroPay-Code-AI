@@ -28,6 +28,8 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cookie": "^1.1.1",
+    "diff": "^9.0.0",
+    "isomorphic-git": "^1.38.5",
     "jsonwebtoken": "^9.0.3",
     "lucide-react": "^1.21.0",
     "monaco-editor": "^0.55.1",
