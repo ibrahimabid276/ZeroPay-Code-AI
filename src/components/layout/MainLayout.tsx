@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Panel,
   Group,
@@ -8,6 +8,7 @@ import {
 } from "react-resizable-panels";
 import { useUIStore } from "@/stores/uiStore";
 import { useEditorStore } from "@/stores/editorStore";
+import { useProjectStore } from "@/stores/projectStore";
 import { EditorTabs } from "@/components/editor/EditorTabs";
 import { MonacoEditorWrapper } from "@/components/editor/MonacoEditorWrapper";
 import { ChatPanel } from "@/components/chat/ChatPanel";
@@ -19,6 +20,9 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { StatusBar } from "@/components/layout/StatusBar";
 import { WelcomeDashboard } from "@/components/dashboard/WelcomeDashboard";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ShortcutsModal } from "@/components/ui/ShortcutsModal";
+import { QuickOpen } from "@/components/ui/QuickOpen";
+import { CommandPalette } from "@/components/ui/CommandPalette";
 import { Code } from "lucide-react";
 
 function ResizeHandle({ className }: { className?: string }) {
@@ -35,47 +39,106 @@ export function MainLayout() {
     terminalOpen,
     viewMode,
     activeSidebar,
+    setActiveSidebar,
     toggleChat,
     toggleTerminal,
   } = useUIStore();
   const { tabs, activeTabId } = useEditorStore();
+  const { fileTree } = useProjectStore();
   const hasOpenFiles = tabs.length > 0;
 
-  // Keyboard shortcuts
+  // Modal states
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [showQuickOpen, setShowQuickOpen] = useState(false);
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
+
+  // Comprehensive keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+      const isCtrl = e.ctrlKey || e.metaKey;
+      const isShift = e.shiftKey;
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+      
+      // Ctrl+Shift+? - Show shortcuts (works everywhere)
+      if (isCtrl && isShift && (e.key === "?" || e.key === "/")) {
         e.preventDefault();
-        // Toggle explorer via activity bar
-        import("@/stores/uiStore").then(({ useUIStore }) => {
-          useUIStore.getState().setActiveSidebar("explorer");
-        });
+        setShowShortcuts(true);
+        return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === "l") {
+
+      // Don't trigger other shortcuts when in input fields (except quick open and command palette)
+      if (isInput && !isCtrl) return;
+
+      // Ctrl+P - Quick file open
+      if (isCtrl && !isShift && e.key === "p") {
         e.preventDefault();
-        toggleChat();
+        setShowQuickOpen(true);
+        return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === "j") {
+
+      // Ctrl+Shift+P - Command palette
+      if (isCtrl && isShift && e.key === "P") {
+        e.preventDefault();
+        setShowCommandPalette(true);
+        return;
+      }
+
+      // Ctrl+` - Toggle terminal
+      if (isCtrl && e.key === "`") {
         e.preventDefault();
         toggleTerminal();
+        return;
       }
-      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+
+      // Ctrl+B - Toggle sidebar (explorer)
+      if (isCtrl && !isShift && e.key === "b") {
         e.preventDefault();
-        // Trigger run - will be handled by serverStore
+        setActiveSidebar(activeSidebar === "explorer" ? null : "explorer");
+        return;
+      }
+
+      // Ctrl+Shift+E - Focus file explorer
+      if (isCtrl && isShift && e.key === "E") {
+        e.preventDefault();
+        setActiveSidebar("explorer");
+        return;
+      }
+
+      // Ctrl+Shift+F - Global search
+      if (isCtrl && isShift && e.key === "F") {
+        e.preventDefault();
+        setActiveSidebar("search");
+        return;
+      }
+
+      // Ctrl+Shift+G - Focus git panel
+      if (isCtrl && isShift && e.key === "G") {
+        e.preventDefault();
+        setActiveSidebar("git");
+        return;
+      }
+
+      // Ctrl+L - Focus AI chat
+      if (isCtrl && !isShift && e.key === "l") {
+        e.preventDefault();
+        toggleChat();
+        return;
+      }
+
+      // Ctrl+Enter - Run code
+      if (isCtrl && e.key === "Enter") {
+        e.preventDefault();
         import("@/stores/serverStore").then(({ useServerStore }) => {
           useServerStore.getState().startServer();
         });
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === "Shift" && e.key.toLowerCase() === "x") {
-        e.preventDefault();
-        import("@/stores/uiStore").then(({ useUIStore }) => {
-          useUIStore.getState().setActiveSidebar("extensions");
-        });
+        return;
       }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [toggleChat, toggleTerminal]);
+  }, [activeSidebar, setActiveSidebar, toggleChat, toggleTerminal]);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -175,6 +238,17 @@ export function MainLayout() {
           </Group>
         </div>
         <StatusBar />
+
+        {/* Modal Overlays */}
+        {showShortcuts && (
+          <ShortcutsModal onClose={() => setShowShortcuts(false)} />
+        )}
+        {showQuickOpen && (
+          <QuickOpen onClose={() => setShowQuickOpen(false)} />
+        )}
+        {showCommandPalette && (
+          <CommandPalette onClose={() => setShowCommandPalette(false)} />
+        )}
       </div>
     </TooltipProvider>
   );
