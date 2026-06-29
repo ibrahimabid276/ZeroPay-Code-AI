@@ -124,6 +124,12 @@ function FileTreeItem({
 export function FileExplorer() {
   const { currentProject, fileTree, refreshFileTree } = useProjectStore();
   const { openTab } = useEditorStore();
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch by only rendering after mount
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Dialog state for create file/folder and rename
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -305,6 +311,15 @@ export function FileExplorer() {
       }
     }, 300);
   };
+
+  // Don't render anything until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="flex items-center justify-center h-full text-muted-foreground text-xs p-4">
+        Loading...
+      </div>
+    );
+  }
 
   if (!currentProject) {
     return (

@@ -1,13 +1,11 @@
 "use client";
 
 import { useUIStore } from "@/stores/uiStore";
-import { useExtensionStore } from "@/stores/extensionStore";
 import {
   FolderOpen,
   Search,
   GitBranch,
   Play,
-  Puzzle,
   Database,
   MessageSquare,
   Settings,
@@ -22,8 +20,6 @@ import {
 
 export function ActivityBar() {
   const { activeSidebar, setActiveSidebar } = useUIStore();
-  const { getInstalledExtensions } = useExtensionStore();
-  const installedCount = getInstalledExtensions().length;
 
   const activities = [
     {
@@ -56,13 +52,6 @@ export function ActivityBar() {
       icon: Play,
       label: "Run & Debug",
       shortcut: "Ctrl+Shift+D",
-    },
-    {
-      id: "extensions" as const,
-      icon: Puzzle,
-      label: "Extensions",
-      shortcut: "Ctrl+Shift+X",
-      badge: installedCount > 0 ? installedCount : undefined,
     },
     {
       id: "github" as const,
